@@ -341,4 +341,11 @@ public class Comm extends RobotPlayer {
     }
   }
 
+  public static int[] getBestSupportingPosition(MapLocation target) throws GameActionException {
+    //
+    int i = rng.nextInt(Util.supportingPositionDxDy.length);
+    int[] dx_dy = Util.supportingPositionDxDy[i];
+    return dx_dy;
+  }
+
 }

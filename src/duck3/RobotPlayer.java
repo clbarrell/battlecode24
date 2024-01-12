@@ -67,7 +67,8 @@ public strictfp class RobotPlayer {
         BUILDING_TRAP,
         WAITING_AT_BARRIER,
         ATTACKING,
-        MOVING_TO_ATTACK, STEALING_FLAG, CHASING_FLAG
+        MOVING_TO_ATTACK, STEALING_FLAG, CHASING_FLAG,
+        SUPPORTING_FLAG_CARRIER
     }
 
     static States myState = States.STARTING;
@@ -233,7 +234,7 @@ public strictfp class RobotPlayer {
 
                     // ****** POST-SETUP ******
                     if (roundNum > GameConstants.SETUP_ROUNDS) {
-                        boolean hasMoved = false;
+                        boolean haveMoved = false;
                         boolean takenAction = false;
                         // If we are holding an enemy flag, singularly focus on moving towards
                         // an ally spawn zone to capture it! We use the check roundNum >= SETUP_ROUNDS
@@ -255,13 +256,12 @@ public strictfp class RobotPlayer {
                                     }
                                 }
                                 Navigation.move(lastCrumb.getMapLocation());
-                                hasMoved = true;
+                                haveMoved = true;
                             }
                             // LOOK FOR FLAG
                             FlagInfo[] flagInfos = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
-                            if (flagInfos.length > 0 && !flagInfos[0].isPickedUp() && !hasMoved) {
+                            if (flagInfos.length > 0 && !flagInfos[0].isPickedUp() && !haveMoved) {
                                 // move to flag
-
                                 if (rc.canPickupFlag(flagInfos[0].getLocation())) {
                                     rc.pickupFlag(flagInfos[0].getLocation());
                                     myState = States.STEALING_FLAG;
@@ -271,9 +271,21 @@ public strictfp class RobotPlayer {
                                     Comm.reportEnemyFlagLocation(flagInfos[0].getLocation());
                                     Navigation.move(flagInfos[0].getLocation());
                                     myState = States.CHASING_FLAG;
-                                    hasMoved = true;
+                                    haveMoved = true;
                                 }
+                            } else if (flagInfos.length > 0 && flagInfos[0].isPickedUp() && !haveMoved
+                                    && flagInfos[0].getTeam() == rc.getTeam().opponent()) {
+                                // priority support
+                                // move to flag location
+                                // random location around
+                                int[] goToDxDy = Comm.getBestSupportingPosition(flagInfos[0].getLocation());
+                                myState = States.SUPPORTING_FLAG_CARRIER;
+                                MapLocation loc = new MapLocation(flagInfos[0].getLocation().x + goToDxDy[0],
+                                        flagInfos[0].getLocation().y + goToDxDy[1]);
+                                Navigation.move(loc);
+                                haveMoved = true;
                             }
+
                             // Priority flag
                             MapLocation priorityFlag = Comm.getEnemyPriorityFlag();
                             if (priorityFlag != null) {
@@ -281,10 +293,10 @@ public strictfp class RobotPlayer {
                                 // if I can sense it and it doesn't exist, remove it
                                 if (rc.canSenseLocation(priorityFlag) && flagInfos.length == 0) {
                                     Comm.clearEnemyFlagLocation(priorityFlag);
-                                } else {
+                                } else if (!haveMoved) {
                                     Navigation.move(priorityFlag);
                                     myState = States.CHASING_FLAG;
-                                    hasMoved = true;
+                                    haveMoved = true;
                                 }
 
                             }
@@ -311,18 +323,18 @@ public strictfp class RobotPlayer {
                                     rc.attack(closestTarget.getLocation());
                                     myState = States.ATTACKING;
                                     takenAction = true;
-                                } else if (!hasMoved) {
+                                } else if (!haveMoved) {
                                     Navigation.move(closestTarget.getLocation());
                                     myState = States.MOVING_TO_ATTACK;
-                                    hasMoved = true;
+                                    haveMoved = true;
                                 }
 
-                            } else if (!hasMoved) {
+                            } else if (!haveMoved) {
                                 // dont see enemy?
                                 targetEnemyLocation = Navigation.bestEnemyLocationGuess();
                                 Navigation.move(targetEnemyLocation);
                                 myState = States.MOVING_TO_ENEMY_SPAWN;
-                                hasMoved = true;
+                                haveMoved = true;
                             }
 
                             // Heal
