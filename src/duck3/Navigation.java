@@ -312,7 +312,7 @@ public class Navigation extends RobotPlayer {
                 } else {
                     MapLocation newLoc = myLoc.add(dir);
                     if (rc.onTheMap(newLoc)) {
-                        MapInfo mi = rc.senseMapInfo(myLoc.add(dir));
+                        MapInfo mi = rc.senseMapInfo(newLoc);
                         boolean isRobot = rc.senseRobotAtLocation(newLoc) != null;
                         if (!mi.isWall() && !mi.isWater() && !isRobot && roundNum <= GameConstants.SETUP_ROUNDS) {
                             Debug.log("Cant go " + newLoc.toString() + " probs barrier");
@@ -320,12 +320,20 @@ public class Navigation extends RobotPlayer {
                             return true;
                         }
 
-                        if (myState == States.GETTING_CRUMB && mi.isWater()) {
-                            // fill
-                            if (rc.canFill(mi.getMapLocation())) {
-                                rc.fill(mi.getMapLocation());
+                        if (mi.isWater()) {
+                            // fill only if there are less than 5 water cells
+                            int cellsWithWater = 1;
+                            // already chcekd next
+                            for (int i = 0; i < 5; i++) {
+                                MapLocation nextLoc = newLoc.add(dir);
+                                if (rc.senseMapInfo(nextLoc).isWater())
+                                    cellsWithWater++;
                             }
-                            return true;
+
+                            if (rc.canFill(mi.getMapLocation()) && cellsWithWater < 5) {
+                                rc.fill(mi.getMapLocation());
+                                return true;
+                            }
                         }
                     }
                 }
@@ -421,8 +429,7 @@ public class Navigation extends RobotPlayer {
 
         MapLocation[] flags = rc.senseBroadcastFlagLocations();
         if (flags.length > 0) {
-            Debug.log("going to flag: " + flags[0].toString());
-            // TODO: Send everyone to the one flag via broadcasting
+            // Debug.log("going to flag: " + flags[0].toString());
             return flags[0];
         }
 
