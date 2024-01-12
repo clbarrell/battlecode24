@@ -96,6 +96,7 @@ public strictfp class RobotPlayer {
         width = rc.getMapWidth();
         height = rc.getMapHeight();
         rng = new Random(id);
+        Navigation.init();
 
         while (true) {
             // This code runs during the entire lifespan of the robot, which is why it is in
@@ -141,7 +142,6 @@ public strictfp class RobotPlayer {
                 } else {
                     // ***** Start turn things *****
                     myLocation = rc.getLocation();
-                    Navigation.init();
 
                     MapInfo[] locsNearMe = rc.senseNearbyMapInfos();
                     // filter locsnearme where crumbs > 0
@@ -277,9 +277,16 @@ public strictfp class RobotPlayer {
                             // Priority flag
                             MapLocation priorityFlag = Comm.getEnemyPriorityFlag();
                             if (priorityFlag != null) {
-                                Navigation.move(priorityFlag);
-                                myState = States.CHASING_FLAG;
-                                hasMoved = true;
+
+                                // if I can sense it and it doesn't exist, remove it
+                                if (rc.canSenseLocation(priorityFlag) && flagInfos.length == 0) {
+                                    Comm.clearEnemyFlagLocation(priorityFlag);
+                                } else {
+                                    Navigation.move(priorityFlag);
+                                    myState = States.CHASING_FLAG;
+                                    hasMoved = true;
+                                }
+
                             }
 
                             // LOOK FOR ENEMY
