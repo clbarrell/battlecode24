@@ -242,19 +242,26 @@ public class Comm extends RobotPlayer {
   public static void reportEnemyFlagLocation(MapLocation location) throws GameActionException {
     MapLocation[] flags = getEnemyFlagLocations();
 
+    // location already in spans?
+    for (MapLocation flag : flags) {
+      if (flag != null && flag.equals(location)) {
+        return;
+      }
+    }
+
     if (readMapLocationFromIndex(PRIORITY_FLAG_INDEX) == null) {
       writeMapLocationToIndex(location, PRIORITY_FLAG_INDEX);
     }
 
     if (flags[0] == null) {
-      writeMapLocationToIndex(myFlagDestination, ENEMY_FLAG_INDEX_1);
-      enemyFlag1 = myFlagDestination;
+      writeMapLocationToIndex(location, ENEMY_FLAG_INDEX_1);
+      enemyFlag1 = location;
     } else if (flags[1] == null) {
-      writeMapLocationToIndex(myFlagDestination, ENEMY_FLAG_INDEX_2);
-      enemyFlag2 = myFlagDestination;
+      writeMapLocationToIndex(location, ENEMY_FLAG_INDEX_2);
+      enemyFlag2 = location;
     } else if (flags[2] == null) {
-      writeMapLocationToIndex(myFlagDestination, ENEMY_FLAG_INDEX_3);
-      enemyFlag3 = myFlagDestination;
+      writeMapLocationToIndex(location, ENEMY_FLAG_INDEX_3);
+      enemyFlag3 = location;
     }
   }
 
@@ -269,9 +276,19 @@ public class Comm extends RobotPlayer {
   public static void clearEnemyFlagLocation(MapLocation location) throws GameActionException {
     MapLocation[] flags = getEnemyFlagLocations();
     MapLocation newPriority = null;
-    for (MapLocation flag : flags) {
+    int[] indexs = { ENEMY_FLAG_INDEX_1, ENEMY_FLAG_INDEX_2, ENEMY_FLAG_INDEX_3 };
+
+    for (int i = 0; i < flags.length; i++) {
+      MapLocation flag = flags[i];
       if (flag != null && flag.equals(location)) {
-        writeMapLocationToIndex(null, ENEMY_FLAG_INDEX_1);
+        writeMapLocationToIndex(null, indexs[i]);
+        if (i == 0) {
+          enemyFlag1 = null;
+        } else if (i == 1) {
+          enemyFlag2 = null;
+        } else if (i == 2) {
+          enemyFlag3 = null;
+        }
       }
 
       if (flag != null && !flag.equals(location)) {
@@ -305,15 +322,22 @@ public class Comm extends RobotPlayer {
   public static void shareBadSpawnPoint(MapLocation location) throws GameActionException {
     MapLocation[] spawns = getEnemyBadSpawnPoints();
 
+    // location already in spans?
+    for (MapLocation spawn : spawns) {
+      if (spawn != null && spawn.equals(location)) {
+        return;
+      }
+    }
+
     if (spawns[0] == null) {
-      writeMapLocationToIndex(myFlagDestination, ENEMY_SPAWN_IGNORE_INDEX_1);
-      enemyBadSpawnPoints[0] = myFlagDestination;
+      writeMapLocationToIndex(location, ENEMY_SPAWN_IGNORE_INDEX_1);
+      enemyBadSpawnPoints[0] = location;
     } else if (spawns[1] == null) {
-      writeMapLocationToIndex(myFlagDestination, ENEMY_SPAWN_IGNORE_INDEX_2);
-      enemyBadSpawnPoints[1] = myFlagDestination;
+      writeMapLocationToIndex(location, ENEMY_SPAWN_IGNORE_INDEX_2);
+      enemyBadSpawnPoints[1] = location;
     } else if (spawns[2] == null) {
-      writeMapLocationToIndex(myFlagDestination, ENEMY_SPAWN_IGNORE_INDEX_3);
-      enemyBadSpawnPoints[2] = myFlagDestination;
+      writeMapLocationToIndex(location, ENEMY_SPAWN_IGNORE_INDEX_3);
+      enemyBadSpawnPoints[2] = location;
     }
   }
 
