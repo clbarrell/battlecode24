@@ -1,4 +1,4 @@
-package duck3;
+package duck4;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -324,14 +324,13 @@ public class Navigation extends RobotPlayer {
                             // fill only if there are less than 5 water cells
                             int cellsWithWater = 1;
                             // already chcekd next
-                            int maxWaterCells = (int) Math.ceil(width * 0.18);
-                            for (int i = 0; i < maxWaterCells; i++) {
+                            for (int i = 0; i < 5; i++) {
                                 MapLocation nextLoc = newLoc.add(dir);
                                 if (rc.senseMapInfo(nextLoc).isWater())
                                     cellsWithWater++;
                             }
 
-                            if (rc.canFill(mi.getMapLocation()) && cellsWithWater < maxWaterCells) {
+                            if (rc.canFill(mi.getMapLocation()) && cellsWithWater < 5) {
                                 rc.fill(mi.getMapLocation());
                                 return true;
                             }
