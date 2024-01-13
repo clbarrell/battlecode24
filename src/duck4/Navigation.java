@@ -324,13 +324,14 @@ public class Navigation extends RobotPlayer {
                             // fill only if there are less than 5 water cells
                             int cellsWithWater = 1;
                             // already chcekd next
-                            for (int i = 0; i < 5; i++) {
+                            int maxWaterCells = (int) Math.ceil(width * 0.18);
+                            for (int i = 0; i < maxWaterCells; i++) {
                                 MapLocation nextLoc = newLoc.add(dir);
                                 if (rc.senseMapInfo(nextLoc).isWater())
                                     cellsWithWater++;
                             }
 
-                            if (rc.canFill(mi.getMapLocation()) && cellsWithWater < 5) {
+                            if (rc.canFill(mi.getMapLocation()) && cellsWithWater < maxWaterCells) {
                                 rc.fill(mi.getMapLocation());
                                 return true;
                             }
