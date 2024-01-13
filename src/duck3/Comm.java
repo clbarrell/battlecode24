@@ -345,6 +345,9 @@ public class Comm extends RobotPlayer {
     //
     int i = rng.nextInt(Util.supportingPositionDxDy.length);
     int[] dx_dy = Util.supportingPositionDxDy[i];
+    // MapLocation closestBase = getClosestML(getFlagLocations());
+    // int[] boost = { 0, 0 };
+    // if
     return dx_dy;
   }
 

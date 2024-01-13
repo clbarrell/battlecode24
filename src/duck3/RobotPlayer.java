@@ -56,6 +56,7 @@ public strictfp class RobotPlayer {
     static MapLocation targetEnemyLocation = null;
     static MapInfo lastCrumb = null;
     static int turnsBeenDead;
+    static int[] goToDxDy = null;
 
     static int roundNum = 0;
 
@@ -278,7 +279,9 @@ public strictfp class RobotPlayer {
                                 // priority support
                                 // move to flag location
                                 // random location around
-                                int[] goToDxDy = Comm.getBestSupportingPosition(flagInfos[0].getLocation());
+                                if (goToDxDy == null) {
+                                    goToDxDy = Comm.getBestSupportingPosition(flagInfos[0].getLocation());
+                                }
                                 myState = States.SUPPORTING_FLAG_CARRIER;
                                 MapLocation loc = new MapLocation(flagInfos[0].getLocation().x + goToDxDy[0],
                                         flagInfos[0].getLocation().y + goToDxDy[1]);
@@ -313,7 +316,7 @@ public strictfp class RobotPlayer {
                                 for (RobotInfo enemy : enemyRobots) {
                                     // if (enemy.getLocation().distanceSquaredTo(myLocation) < closestTarget
                                     // .getLocation().distanceSquaredTo(myLocation)) {
-                                    if (enemy.getHealth() < robotHealth) { // attack weakest
+                                    if (enemy.getHealth() < robotHealth || enemy.hasFlag()) { // attack weakest
                                         closestTarget = enemy;
                                         robotHealth = enemy.getHealth();
                                     }
