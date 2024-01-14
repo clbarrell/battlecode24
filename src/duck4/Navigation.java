@@ -153,9 +153,11 @@ public class Navigation extends RobotPlayer {
         }
 
         if (closestEnemySpawn == null) {
-            // no valid enemy spawns, go to center of map
-            Debug.log("No valid enemy spawns, going to center of map");
-            return new MapLocation(width / 2, height / 2);
+            // no valid enemy spawns with flags, go to center of map
+            // Debug.log("No valid enemy spawns, going to center of map");
+            closestEnemySpawn = ourFlagLocations[rng.nextInt(ourFlagLocations.length)];
+            if (closestEnemySpawn == null)
+                return new MapLocation(width / 2, height / 2);
         }
         nearestEnemySpawnPoint = closestEnemySpawn;
         return closestEnemySpawn;

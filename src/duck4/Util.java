@@ -125,4 +125,27 @@ public class Util {
             { 2, -2 }, { -1, -2 }
     };
 
+    static int[][] defendingTraps = new int[][] {
+            { -4, 4 }, { 0, 4 }, { 4, 4 },
+            { -2, 2 }, { 2, 2 },
+            { -4, 1 }, { 4, 1 },
+            { -2, 0 }, { 2, 0 },
+            { -4, -1 }, { 4, -1 },
+            { -2, -2 }, { 2, -2 },
+            { -4, -4 }, { 0, -4 }, { 4, -4 }
+    };
+
+    /**
+     * REMEMBER EACH SHOCK TRAP triggers on 1 either side.
+     * T - - - T - - - T
+     * - - T - - - T - -
+     * T - - * * * - - T
+     * - - T * X * T - -
+     * T - - * * * - - T
+     * - - T - - - T - -
+     * T - - - T - - - T
+     */
+    // ROBOT CAN copy the array, and as they check/churn off each one, they can
+    // remove it from the array locally. incase it's a wall, etc
+
 }

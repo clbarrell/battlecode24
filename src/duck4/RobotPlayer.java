@@ -2,6 +2,7 @@ package duck4;
 
 import battlecode.common.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -69,10 +70,16 @@ public strictfp class RobotPlayer {
         WAITING_AT_BARRIER,
         ATTACKING,
         MOVING_TO_ATTACK, STEALING_FLAG, CHASING_FLAG,
-        SUPPORTING_FLAG_CARRIER
+        SUPPORTING_FLAG_CARRIER, DEFENDER
     }
 
     static States myState = States.STARTING;
+
+    // defending
+    static int DEFENDERS_PER_SPAWN = 3;
+    static boolean isDefender = false;
+    static MapLocation defendLocation = null;
+    static ArrayList<MapLocation> myTrapLocations = null;
 
     /**
      * run() is the method that is called when a robot is instantiated in the
@@ -119,28 +126,7 @@ public strictfp class RobotPlayer {
                 // actions.
                 // Limit the number of robots we spawn
                 if (!rc.isSpawned()) {
-                    MapLocation[] spawnLocs = rc.getAllySpawnLocations();
-
-                    // make an array of numbers the length of spawnLocs and then jumble it up
-                    int[] spawnLocsOrder = new int[spawnLocs.length];
-                    for (int i = 0; i < spawnLocs.length; i++) {
-                        spawnLocsOrder[i] = i;
-                    }
-                    for (int i = 0; i < spawnLocs.length; i++) {
-                        int j = rng.nextInt(spawnLocs.length);
-                        int temp = spawnLocsOrder[i];
-                        spawnLocsOrder[i] = spawnLocsOrder[j];
-                        spawnLocsOrder[j] = temp;
-                    }
-
-                    for (int i : spawnLocsOrder) {
-                        if (rc.canSpawn(spawnLocs[i])) {
-                            Comm.iCameAlive();
-                            rc.spawn(spawnLocs[i]);
-                            break;
-                        }
-                    }
-                    // }
+                    spawnMe();
                 } else {
                     // ***** Start turn things *****
                     myLocation = rc.getLocation();
@@ -160,13 +146,16 @@ public strictfp class RobotPlayer {
                                     Comm.saveOurFlagLocation(myLocation);
                                 }
 
+                                // DEFENDING - after all the flags have been identified?
+                                checkAndSaveDefenderStatus();
+
                                 // sense, crumb, then explore?
-                                if (crumbs.length > 0) {
+                                if (crumbs.length > 0 && myState != States.DEFENDER) {
                                     // move to crumbs
                                     myState = States.GETTING_CRUMB;
                                     lastCrumb = getClosestMI(crumbs);
                                     Navigation.move(lastCrumb.getMapLocation());
-                                } else {
+                                } else if (myState != States.DEFENDER) {
                                     // move to nearest enemy spawn
                                     // or search for crumbs?
                                     myState = States.MOVING_TO_ENEMY_SPAWN;
@@ -217,16 +206,31 @@ public strictfp class RobotPlayer {
                             case WAITING_AT_BARRIER:
                                 // wait at barrier
                                 // build trap, then go to enemy spawn when -1 from setup turn
-                                if (rc.canBuild(TrapType.EXPLOSIVE, myLocation)) {
-                                    rc.build(TrapType.EXPLOSIVE, myLocation);
+                                MapInfo[] nearbyTraps = rc.senseNearbyMapInfos(1);
+                                int shockTraps = 0;
+                                int explosiveTraps = 0;
+                                for (MapInfo cell : nearbyTraps) {
+                                    if (cell.getTrapType() == TrapType.STUN) {
+                                        shockTraps++;
+                                    } else if (cell.getTrapType() == TrapType.EXPLOSIVE) {
+                                        explosiveTraps++;
+                                    }
                                 }
 
-                                if (roundNum > GameConstants.SETUP_ROUNDS) {
-                                    myState = States.MOVING_TO_ENEMY_SPAWN;
-                                    targetEnemyLocation = Navigation.nearestEnenySpawn();
-                                    Navigation.move(targetEnemyLocation);
+                                TrapType trapToBuild = null;
+                                if (shockTraps >= explosiveTraps) {
+                                    trapToBuild = TrapType.EXPLOSIVE;
+                                } else {
+                                    trapToBuild = TrapType.STUN;
+                                }
+
+                                if (rc.canBuild(trapToBuild, myLocation)) {
+                                    rc.build(trapToBuild, myLocation);
                                 }
                                 break;
+                            case DEFENDER:
+                                // Build traps
+                                checkAndBuildDefensiveTraps();
                             default:
                                 break;
                         }
@@ -291,7 +295,7 @@ public strictfp class RobotPlayer {
 
                             // Priority flag
                             MapLocation priorityFlag = Comm.getEnemyPriorityFlag();
-                            if (priorityFlag != null) {
+                            if (priorityFlag != null && !isDefender) {
 
                                 // if I can sense it and it doesn't exist, remove it
                                 if (rc.canSenseLocation(priorityFlag) && flagInfos.length == 0) {
@@ -326,7 +330,7 @@ public strictfp class RobotPlayer {
                                     rc.attack(closestTarget.getLocation());
                                     myState = States.ATTACKING;
                                     takenAction = true;
-                                } else if (!haveMoved) {
+                                } else if (!haveMoved && rc.getActionCooldownTurns() == 0) {
                                     Navigation.move(closestTarget.getLocation());
                                     myState = States.MOVING_TO_ATTACK;
                                     haveMoved = true;
@@ -334,10 +338,16 @@ public strictfp class RobotPlayer {
 
                             } else if (!haveMoved) {
                                 // dont see enemy?
-                                targetEnemyLocation = Navigation.bestEnemyLocationGuess();
-                                Navigation.move(targetEnemyLocation);
-                                myState = States.MOVING_TO_ENEMY_SPAWN;
-                                haveMoved = true;
+                                if (isDefender) {
+                                    checkAndBuildDefensiveTraps();
+                                    haveMoved = true;
+                                    myState = States.DEFENDER;
+                                } else {
+                                    targetEnemyLocation = Navigation.bestEnemyLocationGuess();
+                                    Navigation.move(targetEnemyLocation);
+                                    myState = States.MOVING_TO_ENEMY_SPAWN;
+                                    haveMoved = true;
+                                }
                             }
 
                             // Heal
@@ -359,6 +369,13 @@ public strictfp class RobotPlayer {
                                         takenAction = true;
                                     }
                                 }
+                            }
+
+                            // Defend
+                            if (isDefender && myTrapLocations != null && myTrapLocations.size() == 0) {
+                                generateDefensiveTrapLocations();
+                                // Debug.log("Calling generate trap locs. Length now: " +
+                                // myTrapLocations.size());
                             }
 
                         }
@@ -402,6 +419,97 @@ public strictfp class RobotPlayer {
 
         // Your code should never reach here (unless it's intentional)! Self-destruction
         // imminent...
+    }
+
+    private static void checkAndBuildDefensiveTraps() throws GameActionException {
+        if (myTrapLocations.size() > 0 && rc.canSenseLocation(myTrapLocations.get(0))) {
+            MapInfo info = rc.senseMapInfo(myTrapLocations.get(0));
+            if (info.isWall() || info.isWater() || info.getTrapType() != TrapType.NONE) {
+                myTrapLocations.remove(0);
+                checkAndBuildDefensiveTraps();
+            } else if (info.getTrapType() == TrapType.NONE) {
+                // can I build or just move
+                if (rc.canBuild(TrapType.STUN, myTrapLocations.get(0))) {
+                    rc.build(TrapType.STUN, myTrapLocations.get(0));
+                } else {
+                    Navigation.move(myTrapLocations.get(0));
+                }
+            }
+        } else if (myTrapLocations.size() > 0 && !rc.canSenseLocation(myTrapLocations.get(0))) {
+            Navigation.move(myTrapLocations.get(0));
+        } else {
+            // built all the traps!
+            // now just wait
+        }
+    }
+
+    private static void checkAndSaveDefenderStatus() throws GameActionException {
+        MapLocation[] flagLocs = Comm.getFlagLocations();
+        // null?
+        boolean anyNull = false;
+        for (MapLocation loc : flagLocs) {
+            if (loc == null) {
+                anyNull = true;
+                break;
+            }
+        }
+        if (!anyNull) {
+            // should I be a defendder? Report my location and return the int for which
+            // spawn I'm defending
+            int spawnDefender = Comm.newSpawnDefender(myLocation);
+            if (spawnDefender != -1) {
+                isDefender = true;
+                myState = States.DEFENDER;
+                defendLocation = flagLocs[spawnDefender];
+                Debug.log("I'm a defender! for spawn " + spawnDefender + " at " + defendLocation.toString());
+                generateDefensiveTrapLocations();
+            }
+        }
+    }
+
+    private static void generateDefensiveTrapLocations() {
+        boolean reverse = rng.nextBoolean();
+        myTrapLocations = new ArrayList<MapLocation>(Util.defendingTraps.length);
+        for (int i = 0; i < Util.defendingTraps.length; i++) {
+            int index = reverse ? Util.defendingTraps.length - i - 1 : i;
+            int[] trap = Util.defendingTraps[index];
+            int x = defendLocation.x + trap[0];
+            int y = defendLocation.y + trap[1];
+            if (x >= 0 && x < width && y >= 0 && y < height) {
+                myTrapLocations.add(new MapLocation(x, y));
+            }
+        }
+
+    }
+
+    private static void spawnMe() throws GameActionException {
+        MapLocation[] spawnLocs = rc.getAllySpawnLocations();
+
+        if (isDefender && rc.canSpawn(defendLocation)) {
+            Comm.iCameAlive();
+            rc.spawn(defendLocation);
+            return;
+        }
+
+        // make an array of numbers the length of spawnLocs and then jumble it up
+        int[] spawnLocsOrder = new int[spawnLocs.length];
+        for (int i = 0; i < spawnLocs.length; i++) {
+            spawnLocsOrder[i] = i;
+        }
+        for (int i = 0; i < spawnLocs.length; i++) {
+            int j = rng.nextInt(spawnLocs.length);
+            int temp = spawnLocsOrder[i];
+            spawnLocsOrder[i] = spawnLocsOrder[j];
+            spawnLocsOrder[j] = temp;
+        }
+
+        for (int i : spawnLocsOrder) {
+            if (rc.canSpawn(spawnLocs[i])) {
+                Comm.iCameAlive();
+                rc.spawn(spawnLocs[i]);
+                break;
+            }
+        }
     }
 
     public static MapLocation getClosestML(MapLocation[] locs) {

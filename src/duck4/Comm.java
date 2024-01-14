@@ -50,6 +50,10 @@ public class Comm extends RobotPlayer {
   private static int ENEMY_SPAWN_IGNORE_INDEX_1 = 11;
   private static int ENEMY_SPAWN_IGNORE_INDEX_2 = 12;
   private static int ENEMY_SPAWN_IGNORE_INDEX_3 = 13;
+  // 14-16 spawn defenders
+  private static int SPAWN_DEFENDER_INDEX_1 = 14;
+  private static int SPAWN_DEFENDER_INDEX_2 = 15;
+  private static int SPAWN_DEFENDER_INDEX_3 = 16;
 
   public static int anySymmetryConfirmed() throws GameActionException {
     int rotational = rc.readSharedArray(0);
@@ -67,6 +71,13 @@ public class Comm extends RobotPlayer {
     }
   }
 
+  /**
+   * Depreciated! Not using
+   * 
+   * @param loc
+   * @return
+   * @throws GameActionException
+   */
   public static MapLocation safeFlagLocation(MapLocation loc) throws GameActionException {
     // read maplocation via decoding from shared array index 4
     flag1 = readMapLocationFromIndex(OURFLAG1INDEX);
@@ -88,6 +99,10 @@ public class Comm extends RobotPlayer {
     return loc;
   }
 
+  /**
+   * @return an array of our original flag/spawn locations [3]
+   * @throws GameActionException
+   */
   public static MapLocation[] getFlagLocations() throws GameActionException {
     MapLocation[] flags = new MapLocation[] { flag1, flag2, flag3 };
     if (flag1 == null) {
@@ -349,6 +364,35 @@ public class Comm extends RobotPlayer {
     // int[] boost = { 0, 0 };
     // if
     return dx_dy;
+  }
+
+  // only called when they're not null
+  public static int newSpawnDefender(MapLocation loc) throws GameActionException {
+    MapLocation[] spawns = getFlagLocations();
+    // which spawn am I closest to?
+    int closest = 0;
+    int distance = 999999;
+    for (int i = 0; i < spawns.length; i++) {
+      MapLocation spawn = spawns[i];
+      if (spawn != null) {
+        int d = myLocation.distanceSquaredTo(spawn);
+        if (d < distance) {
+          distance = d;
+          closest = i;
+        }
+      }
+    }
+
+    // how many already definding that?
+    int[] indexs = { SPAWN_DEFENDER_INDEX_1, SPAWN_DEFENDER_INDEX_2, SPAWN_DEFENDER_INDEX_3 };
+    int currentCount = rc.readSharedArray(indexs[closest]);
+
+    if (currentCount < DEFENDERS_PER_SPAWN) {
+      // increase count
+      rc.writeSharedArray(indexs[closest], currentCount + 1);
+      return closest;
+    }
+    return -1; // 0 = none
   }
 
 }

@@ -1,9 +1,10 @@
 # TODO List of things
 
 In progress:
-
+- explore in first 150 turns
 
 Not started
+
 - Safe passage returning with flag. When I have a flag, put it in shared array and which spawn I'm going to. Then every other duck can make sure that they do not block the path of the flag carrier by whitelisting cells from FlagCarrier to Spawn within 4 cells of the FlagCarrier.
 - How do I know where I got the flag from? so I can stop looking there.
 - Have squads
@@ -15,13 +16,16 @@ Not started
 - make judgement about hether to go to flag holder to attack or attack enemy I can attack
 - if i  have flag, never move backwards
 - account for up to 4 spawns
-- fix invalid symmOptions late game -  maybe I'mmaking 1 if there's no flag?
+- fix invalid symmOptions late game - maybe I'mmaking 1 if there's no flag?
 - make supporting dxdy to give extra space to the X and Y direction of our bases
 - wait for a group before leaving base
 - estimmate flag location from broadcast
+- if I'm healing I can't attack. So only heal if I’m further away from the enemy, otherwise wait to attack
 
 Bot name:
+
 - Duck2
+
   - First basic bot working. Does all the things. No defense though basically, except for a few traps.
   - Instead of just guessing enemy spawns by my spawn locs, save the location of my flags (3) and use that.
   - use the priority flag thing.
@@ -32,4 +36,3 @@ Bot name:
   - Keep the flag carriers safe.
   - When in jail, find a good spawn location based on other data
   - Fix the losslessness of after I've picked up the flags
-
