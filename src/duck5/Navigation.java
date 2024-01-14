@@ -533,7 +533,7 @@ public class Navigation extends RobotPlayer {
         }
 
         if (roundNum % 15 == 0) {
-            myRandomDir++;
+            myRandomDir += 4;
         }
     }
 
