@@ -22,6 +22,7 @@ public class Comm extends RobotPlayer {
   private static MapLocation enemyFlag2 = null;
   private static MapLocation enemyFlag3 = null;
   private static MapLocation[] enemyBadSpawnPoints = { null, null, null };
+  private static MapLocation missingFlagLocation = null;
 
   // Shared array has 64 slots
   // 0-2 are for confirming symmetry. 0 rotational, 1 x reflection, 2 y reflection
@@ -54,6 +55,10 @@ public class Comm extends RobotPlayer {
   private static int SPAWN_DEFENDER_INDEX_1 = 14;
   private static int SPAWN_DEFENDER_INDEX_2 = 15;
   private static int SPAWN_DEFENDER_INDEX_3 = 16;
+  // 17-19 flag still there
+  private static int FLAG_1_PRESENT_INDEX = 17;
+  private static int FLAG_2_PRESENT_INDEX = 18;
+  private static int FLAG_3_PRESENT_INDEX = 19;
 
   public static int anySymmetryConfirmed() throws GameActionException {
     int rotational = rc.readSharedArray(0);
@@ -393,6 +398,34 @@ public class Comm extends RobotPlayer {
       return closest;
     }
     return -1; // 0 = none
+  }
+
+  public static void reportStolenFlag(MapLocation f) throws GameActionException {
+    MapLocation[] flags = getFlagLocations();
+    int[] indexs = { FLAG_1_PRESENT_INDEX, FLAG_2_PRESENT_INDEX, FLAG_3_PRESENT_INDEX };
+
+    for (int i = 0; i < flags.length; i++) {
+      MapLocation flag = flags[i];
+      if (flag != null && flag.equals(f)) {
+        missingFlagLocation = f;
+        rc.writeSharedArray(indexs[i], 1);
+      }
+    }
+
+  }
+
+  public static MapLocation getNextDefendLocation() throws GameActionException {
+    MapLocation[] flags = getFlagLocations();
+    int[] indexs = { FLAG_1_PRESENT_INDEX, FLAG_2_PRESENT_INDEX, FLAG_3_PRESENT_INDEX };
+
+    for (int i = 0; i < flags.length; i++) {
+      MapLocation flag = flags[i];
+      if (flag != null && rc.readSharedArray(indexs[i]) == 1 && !flag.equals(missingFlagLocation)) {
+        return flag;
+      }
+    }
+
+    return null;
   }
 
 }

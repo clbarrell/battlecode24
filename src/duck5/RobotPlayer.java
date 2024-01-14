@@ -429,8 +429,36 @@ public strictfp class RobotPlayer {
         // imminent...
     }
 
+    private static boolean checkedFlag = true;
+
     private static void checkAndBuildDefensiveTraps() throws GameActionException {
-        if (myTrapLocations.size() > 0 && rc.canSenseLocation(myTrapLocations.get(0))) {
+        // every 10 rounds check if the flag is still there
+        if (myTrapLocations.size() % 4 == 0)
+            checkedFlag = false;
+
+        if (!checkedFlag && roundNum > GameConstants.SETUP_ROUNDS) {
+            Debug.log("Checking my flag is there");
+            if (rc.canSenseLocation(defendLocation)) {
+                FlagInfo[] flags = rc.senseNearbyFlags(-1, rc.getTeam());
+                if (flags.length == 0) {
+                    // no flags
+                    Comm.reportStolenFlag(defendLocation);
+                    defendLocation = Comm.getNextDefendLocation();
+
+                    if (defendLocation == null) {
+                        isDefender = false;
+                        myState = States.MOVING_TO_ENEMY_SPAWN;
+                    } else {
+                        myTrapLocations = null;
+                        generateDefensiveTrapLocations();
+                    }
+
+                }
+                checkedFlag = true;
+            } else {
+                Navigation.move(defendLocation);
+            }
+        } else if (myTrapLocations.size() > 0 && rc.canSenseLocation(myTrapLocations.get(0))) {
             MapInfo info = rc.senseMapInfo(myTrapLocations.get(0));
             if (info.isWall() || info.isWater() || info.getTrapType() != TrapType.NONE) {
                 myTrapLocations.remove(0);
