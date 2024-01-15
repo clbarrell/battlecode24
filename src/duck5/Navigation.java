@@ -98,8 +98,9 @@ public class Navigation extends RobotPlayer {
         MapLocation closestEnemySpawn = null;
         // 0 unknown, 1 invalid
         int[] invalidSymmetryOptions = Comm.getfailedSymmetry(); // 0 rotational, 1 x reflection, 2 y reflection
-        Debug.log("Invalid symm: " + invalidSymmetryOptions[0] + ", " + invalidSymmetryOptions[1] + ", "
-                + invalidSymmetryOptions[2]);
+        // Debug.log("Invalid symm: " + invalidSymmetryOptions[0] + ", " +
+        // invalidSymmetryOptions[1] + ", "
+        // + invalidSymmetryOptions[2]);
 
         MapLocation[] ourFlagLocations = Comm.getFlagLocations();
         // go to center of map if no flag locations saved
@@ -113,17 +114,19 @@ public class Navigation extends RobotPlayer {
                 continue;
             int[][] enemySpawns = calculateSymmetryOptions(flag);
             // check whether any of the enemy spawns are valid
-            Debug.log(
-                    flag + ":, Options: [" + enemySpawns[0][0] + ", " + enemySpawns[0][1] + "], ["
-                            + enemySpawns[1][0] + ", "
-                            + enemySpawns[1][1] + "], [" + enemySpawns[2][0] + ", " + enemySpawns[2][1] + "]");
+            // Debug.log(
+            // flag + ":, Options: [" + enemySpawns[0][0] + ", " + enemySpawns[0][1] + "],
+            // ["
+            // + enemySpawns[1][0] + ", "
+            // + enemySpawns[1][1] + "], [" + enemySpawns[2][0] + ", " + enemySpawns[2][1] +
+            // "]");
             for (int i = 0; i < invalidSymmetryOptions.length; i++) {
                 if (invalidSymmetryOptions[i] == 1) {
                     // Debug.log("Symm invalid: " + symmetryGuessWords[i]);
                     continue;
                 }
 
-                Debug.log("Checking: " + symmetryGuessWords[i]);
+                // Debug.log("Checking: " + symmetryGuessWords[i]);
                 boolean isValid = true;
                 MapLocation symmOption = new MapLocation(enemySpawns[i][0], enemySpawns[i][1]);
                 // see if symmOption is in badSpawnLocations
@@ -139,7 +142,8 @@ public class Navigation extends RobotPlayer {
                     if (spawn == null)
                         continue;
                     if (distanceBetween(symmOption, spawn) < 7.2) {
-                        Debug.log("Too close to spawn: " + spawn.toString() + ", option: " + symmOption.toString());
+                        // Debug.log("Too close to spawn: " + spawn.toString() + ", option: " +
+                        // symmOption.toString());
                         invalidSymmetryOptions[i] = 1;
                         isValid = false;
                         break;
@@ -152,7 +156,7 @@ public class Navigation extends RobotPlayer {
                         closestDistance = dist;
                         closestEnemySpawn = symmOption;
                         symmetryGuess = i;
-                        Debug.log("Making guess: " + symmetryGuessWords[i] + ", " + symmOption);
+                        // Debug.log("Making guess: " + symmetryGuessWords[i] + ", " + symmOption);
                     }
                 }
                 // I could write to the shared array now, just writing off an option? But
@@ -305,7 +309,7 @@ public class Navigation extends RobotPlayer {
                 if (d < minDistToEnemy) {
                     // Debug.log("New min dist: " + d + " Old: " + minDistToEnemy);
                     if (lastObstacleFound != null) {
-                        Debug.log("broke free from!!: " + lastObstacleFound);
+                        // Debug.log("broke free from!!: " + lastObstacleFound);
                         resetPathfinding();
                         minDistToEnemy = d;
                     }
@@ -585,8 +589,9 @@ public class Navigation extends RobotPlayer {
         // Check priority flags
         MapLocation priorityFlag = Comm.getEnemyPriorityFlag();
         if (roundNum > GameConstants.SETUP_ROUNDS && priorityFlag != null) {
-            Debug.log("going to priority flag: " + priorityFlag.toString());
-            Debug.log("Priority flag in shared Array " + Comm.readMapLocationFromIndex(Comm.PRIORITY_FLAG_INDEX));
+            // Debug.log("going to priority flag: " + priorityFlag.toString());
+            // Debug.log("Priority flag in shared Array " +
+            // Comm.readMapLocationFromIndex(Comm.PRIORITY_FLAG_INDEX));
             return priorityFlag;
         }
 
@@ -601,7 +606,8 @@ public class Navigation extends RobotPlayer {
                 if (!potentialSpawn.isSpawnZone()) {
                     // this symmetry guess was wrong.
                     Comm.shareFailedSymmetry(symmetryGuess);
-                    Debug.log("This symmetry guess was wrong: " + symmetryGuessWords[symmetryGuess]);
+                    // Debug.log("This symmetry guess was wrong: " +
+                    // symmetryGuessWords[symmetryGuess]);
                     nearestEnemySpawnPoint = null;
                 } else if (flags.length == 0) {
                     // no flags at this spawn point, it's crap, get a new one.
@@ -630,7 +636,7 @@ public class Navigation extends RobotPlayer {
         }
 
         nearestEnemySpawnPoint = nearestEnenySpawn();
-        Debug.log("going to new spawnPoint: " + nearestEnemySpawnPoint.toString());
+        // Debug.log("going to new spawnPoint: " + nearestEnemySpawnPoint.toString());
 
         return nearestEnemySpawnPoint;
 
@@ -772,7 +778,7 @@ public class Navigation extends RobotPlayer {
             while (!rc.onTheMap(nextLoc)) {
                 Direction randomDir = directions[rng.nextInt(directions.length)];
                 nextLoc = myLocation.add(randomDir.opposite());
-                Debug.log("Had to change direction to stay on map");
+                // Debug.log("Had to change direction to stay on map");
             }
             move(nextLoc);
         }
