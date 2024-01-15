@@ -20,6 +20,17 @@ Not started
 - estimmate flag location from broadcast
 - if I'm healing I can't attack. So only heal if I’m further away from the enemy, otherwise wait to attack
 - Crowd source all the wall and dam cells in map, store them in arrays and then use that for BFS? Maybe it'll be faster by not having to do rc.senseLocation() every time
+- attack; position so I'm only facing 1 enemy, but maybe more allies?
+2. Move out of enemy range when not able to attack.
+3. Retreat when low health to get healed by archon.
+4. Multi-tiered pathfinding based on bytecode left.
+5. Put enemy targets in shared array.
+6. Prioritize low HP, dangerous enemies for targeting.
+7. If surrounded by allied soldiers, advance even if already in range of target.
+you move into range and then shoot, they take one turn to shoot, and then you shoot and move out of range; 
+1v1, Nv1, NvN, considerAttackMove,
+move or attack first?
+to move into position to attack, use a pre generated array of positions, so that I can always go adjaceent to existing robots.
 
 Bot name:
 
