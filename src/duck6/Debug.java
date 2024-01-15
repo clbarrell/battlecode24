@@ -2,9 +2,9 @@ package duck6;
 
 import battlecode.common.MapLocation;
 
-public class Debug {
+public class Debug extends RobotPlayer {
   public static void log(String s) {
-    System.out.println(s);
+    // System.out.println(myLocation.toString() + " " + s);
   }
 
   public static void logId(String s, int id) {
