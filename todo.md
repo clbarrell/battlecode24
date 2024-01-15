@@ -1,14 +1,12 @@
 # TODO List of things
 
 In progress:
-- explore in first 150 turns
 
 Not started
 
 - Safe passage returning with flag. When I have a flag, put it in shared array and which spawn I'm going to. Then every other duck can make sure that they do not block the path of the flag carrier by whitelisting cells from FlagCarrier to Spawn within 4 cells of the FlagCarrier.
 - How do I know where I got the flag from? so I can stop looking there.
 - Have squads
-- Defend. Make some traps near base. Have a squad build them.
 - Bug nav: save the direction I was trying to go. Instead of getting Direction.to(dest), just keep trying idealDirection until it's visitable.
 - Notify that someone is holding our flag, chase them
 - round upgrade thing
@@ -21,6 +19,7 @@ Not started
 - wait for a group before leaving base
 - estimmate flag location from broadcast
 - if I'm healing I can't attack. So only heal if I’m further away from the enemy, otherwise wait to attack
+- Crowd source all the wall and dam cells in map, store them in arrays and then use that for BFS? Maybe it'll be faster by not having to do rc.senseLocation() every time
 
 Bot name:
 
@@ -31,8 +30,18 @@ Bot name:
   - use the priority flag thing.
 
 - Duck3
+
   - Fill in water cells when blocked!!
   - Attack the enemy I can scan if they're holding our flag
-  - Keep the flag carriers safe.
+  - Keep the flag carriers safe with a platoon
   - When in jail, find a good spawn location based on other data
   - Fix the losslessness of after I've picked up the flags
+
+- Duck4
+  - Defend your base with 3 defenders and make a surrounding pattern of traps
+- - Defend. Make some traps near base. Have a squad build them.
+
+- Duck 5
+  - explore in first 150 turns
+  - defend a different flag if your flag is gone
+  - Improve pathfinding. Tried A* but too expensive. Made changes to bug nav to properly go around the obstacle. But it chooses the best direction to turn by looking at which path (left or right) gets it closer to the target location.

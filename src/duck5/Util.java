@@ -148,4 +148,15 @@ public class Util {
     // ROBOT CAN copy the array, and as they check/churn off each one, they can
     // remove it from the array locally. incase it's a wall, etc
 
+    static Direction[][] dirsToCheckAS = new Direction[][] {
+            { Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.WEST, Direction.NORTHWEST },
+            { Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.NORTHWEST },
+            { Direction.NORTH, Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH },
+            { Direction.NORTHEAST, Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST },
+            { Direction.EAST, Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST,
+                    Direction.NORTHWEST },
+            { Direction.SOUTHEAST, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST },
+            { Direction.NORTH, Direction.SOUTH, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST },
+            { Direction.NORTH, Direction.NORTHEAST, Direction.SOUTHWEST, Direction.WEST, Direction.NORTHWEST } };
+
 }

@@ -70,7 +70,7 @@ public strictfp class RobotPlayer {
         WAITING_AT_BARRIER,
         ATTACKING,
         MOVING_TO_ATTACK, STEALING_FLAG, CHASING_FLAG,
-        SUPPORTING_FLAG_CARRIER, DEFENDER
+        SUPPORTING_FLAG_CARRIER, DEFENDER, EXPLORING
     }
 
     static States myState = States.STARTING;
@@ -169,7 +169,9 @@ public strictfp class RobotPlayer {
                             case GETTING_CRUMB:
                                 // sense, crumb, then explore?
                                 // crumbs
-                                if (!lastCrumb.getMapLocation().equals(myLocation)) {
+                                if (!lastCrumb.getMapLocation().equals(myLocation)
+                                        && ((rc.canSenseLocation(lastCrumb.getMapLocation()) && crumbs.length > 0)
+                                                || !rc.canSenseLocation(lastCrumb.getMapLocation()))) {
                                     Navigation.move(lastCrumb.getMapLocation());
                                 } else if (crumbs.length > 0) {
                                     lastCrumb = getClosestMI(crumbs);
@@ -204,12 +206,29 @@ public strictfp class RobotPlayer {
                                     // dont see enemy?
                                     if (roundNum < EXPLORE_UNTIL_ROUND) {
                                         // explore
+                                        myState = States.EXPLORING;
                                         Navigation.explore();
                                     } else {
                                         Navigation.move(Navigation.bestEnemyLocationGuess());
                                     }
                                 }
 
+                                break;
+                            case EXPLORING:
+                                if (crumbs.length > 0) {
+                                    // move to crumbs
+                                    myState = States.GETTING_CRUMB;
+                                    lastCrumb = getClosestMI(crumbs);
+                                    Navigation.move(lastCrumb.getMapLocation());
+                                }
+                                if (roundNum < EXPLORE_UNTIL_ROUND) {
+                                    // explore
+                                    myState = States.EXPLORING;
+                                    Navigation.explore();
+                                } else {
+                                    myState = States.MOVING_TO_ENEMY_SPAWN;
+                                    Navigation.move(Navigation.bestEnemyLocationGuess());
+                                }
                                 break;
                             case WAITING_AT_BARRIER:
                                 // wait at barrier
@@ -244,6 +263,10 @@ public strictfp class RobotPlayer {
                         }
 
                     }
+
+                    // if (roundNum > 10) {
+                    // rc.resign();
+                    // }
 
                     // ****** POST-SETUP ******
                     if (roundNum > GameConstants.SETUP_ROUNDS) {
@@ -391,11 +414,12 @@ public strictfp class RobotPlayer {
 
                     rc.setIndicatorString(myState.toString());
 
-                    if (id % 10 == 0) {
-                        Debug.log("Priority flag: " + Comm.getEnemyPriorityFlag() + " raw: "
-                                + rc.readSharedArray(Comm.PRIORITY_FLAG_INDEX));
-                        Debug.log("All enemy flags: " + Debug.printMapLocations(Comm.getEnemyFlagLocations()));
-                    }
+                    // if (id % 10 == 0) {
+                    // Debug.log("Priority flag: " + Comm.getEnemyPriorityFlag() + " raw: "
+                    // + rc.readSharedArray(Comm.PRIORITY_FLAG_INDEX));
+                    // Debug.log("All enemy flags: " +
+                    // Debug.printMapLocations(Comm.getEnemyFlagLocations()));
+                    // }
 
                 }
 
@@ -437,7 +461,7 @@ public strictfp class RobotPlayer {
             checkedFlag = false;
 
         if (!checkedFlag && roundNum > GameConstants.SETUP_ROUNDS) {
-            Debug.log("Checking my flag is there");
+            // Debug.log("Checking my flag is there");
             if (rc.canSenseLocation(defendLocation)) {
                 FlagInfo[] flags = rc.senseNearbyFlags(-1, rc.getTeam());
                 if (flags.length == 0) {
@@ -467,8 +491,10 @@ public strictfp class RobotPlayer {
                 // can I build or just move
                 if (rc.canBuild(TrapType.STUN, myTrapLocations.get(0))) {
                     rc.build(TrapType.STUN, myTrapLocations.get(0));
-                } else {
+                } else if (Util.distance(myLocation, myTrapLocations.get(0)) > 1) {
                     Navigation.move(myTrapLocations.get(0));
+                } else {
+                    // wait
                 }
             }
         } else if (myTrapLocations.size() > 0 && !rc.canSenseLocation(myTrapLocations.get(0))) {
