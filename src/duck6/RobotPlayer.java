@@ -421,6 +421,15 @@ public strictfp class RobotPlayer {
                     // Debug.printMapLocations(Comm.getEnemyFlagLocations()));
                     // }
 
+                    if (roundNum == 750 || roundNum == 1500) {
+                        if (rc.canBuyGlobal(GlobalUpgrade.ACTION)) {
+                            rc.buyGlobal(GlobalUpgrade.ACTION);
+                        }
+                        if (rc.canBuyGlobal(GlobalUpgrade.HEALING)) {
+                            rc.buyGlobal(GlobalUpgrade.HEALING);
+                        }
+                    }
+
                 }
 
             } catch (GameActionException e) {
