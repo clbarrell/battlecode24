@@ -31,6 +31,8 @@ you move into range and then shoot, they take one turn to shoot, and then you sh
 1v1, Nv1, NvN, considerAttackMove,
 move or attack first?
 to move into position to attack, use a pre generated array of positions, so that I can always go adjaceent to existing robots.
+- In the first half of the game, move towards enemy more spaced out to minimise the impact of bombs! maybe record too if they are using bombs.
+- if I'm moving to the enemy, and there's a friednly flag carrier, then leave space for them!
 
 Bot name:
 
