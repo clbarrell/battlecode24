@@ -490,19 +490,19 @@ public class Navigation extends RobotPlayer {
             int rDist = Util.distance(rLast, target);
             if (lDist < rDist) {
                 rotateRight = false;
-                lastObstacleFound = lastRObstacle;
+                lastObstacleFound = lastLObstacle;
                 // Debug.log("[L] Setting lastObsFound to " + lastObstacleFound);
                 return myLocation.directionTo(lPath.get(0));
             } else if (rDist < lDist) {
                 rotateRight = true;
-                lastObstacleFound = lastLObstacle;
+                lastObstacleFound = lastRObstacle;
                 // Debug.log("[R] Setting lastObsFound to " + lastObstacleFound);
                 return myLocation.directionTo(rPath.get(0));
             } else {
                 // same distance
                 if (lPath.size() < rPath.size()) {
                     rotateRight = false;
-                    lastObstacleFound = lastRObstacle;
+                    lastObstacleFound = lastLObstacle;
                     // Debug.log("[L] Setting lastObsFound to " + lastObstacleFound);
                     return myLocation.directionTo(lPath.get(0));
                 } else {
