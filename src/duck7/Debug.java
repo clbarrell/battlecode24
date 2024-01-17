@@ -4,10 +4,7 @@ import battlecode.common.MapLocation;
 
 public class Debug extends RobotPlayer {
   public static void log(String s) {
-    if (rc.hasFlag()) {
-      System.out.println(myLocation.toString() + " " + s);
-
-    }
+    System.out.println(myLocation.toString() + " " + s);
   }
 
   public static void logId(String s, int id) {
