@@ -34,14 +34,23 @@ public class Attack extends RobotPlayer {
     // Sense nearby enemies
     sense();
 
+    // what about switching the order?
+    if (rc.getActionCooldownTurns() <= GameConstants.COOLDOWN_LIMIT && closeEnemies.length > 0) {
+      // TODO: Also check that I can actually attack a person by moving into their
+      // range
+      attackFirst = true;
+    }
+    // use the order to determine whether I should only look in ragne too
     MapLocation attackTarget = selectAttackTarget();
     MapLocation moveTarget = selectMoveTarget();
     MapLocation shouldIHealSomeone = shouldIHealSomeone();
-
-    // what about switching the order?
-    if (rc.getActionCooldownTurns() <= GameConstants.COOLDOWN_LIMIT && closeEnemies.length > 0) {
-      // TODO: Also check that I can actually attack a person by moving into their range
-      attackFirst = true;
+    
+    // this has out of range error sometimes, if I move first. Need to figure that out first! but
+    // it's also so tied together.
+    if (attackTarget == null && shouldIHealSomeone != null) {
+      bools[0] = true;
+      myState = States.HEALING;
+      rc.heal(shouldIHealSomeone);
     }
 
     String s = "";
@@ -76,11 +85,6 @@ public class Attack extends RobotPlayer {
     }
     Debug.log(s);
 
-    if (attackTarget == null && shouldIHealSomeone != null) {
-      bools[0] = true;
-      myState = States.HEALING;
-      rc.heal(shouldIHealSomeone);
-    }
 
     return bools;
   }
@@ -112,6 +116,7 @@ public class Attack extends RobotPlayer {
       if (injuredAllies.length > 0) {
         RobotInfo closestInjured = getClosestRI(injuredAllies);
         if (rc.canHeal(closestInjured.location)) {
+          Debug.log("Trying to heal " + closestInjured.location);
           return closestInjured.location;
         }
       }
