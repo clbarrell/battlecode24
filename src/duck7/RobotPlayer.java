@@ -355,22 +355,22 @@ public strictfp class RobotPlayer {
                                     checkAndBuildDefensiveTraps();
                                     haveMoved = true;
                                     myState = States.DEFENDER;
+                                } else if (isHealing) {
+                                    myState = States.HEALING;
+                                    if (rc.getHealth() == GameConstants.DEFAULT_HEALTH) {
+                                        Debug.log("All healed. Back to normal.");
+                                        isHealing = false;
+                                    } else {
+                                        // keep going back to base.
+                                        Debug.log("Still healing back to base.");
+                                        goToClosestAllySpawn();
+                                        myState = States.HEALING;
+                                    }
                                 } else {
                                     targetEnemyLocation = Navigation.bestEnemyLocationGuess();
                                     Navigation.move(targetEnemyLocation);
                                     myState = States.MOVING_TO_ENEMY_SPAWN;
                                     haveMoved = true;
-                                }
-                            }
-
-                            // Am trying to get healed!
-                            if (isHealing) {
-                                if (rc.getHealth() == GameConstants.DEFAULT_HEALTH) {
-                                    isHealing = false;
-                                } else {
-                                    // keep going back to base.
-                                    goToClosestAllySpawn();
-                                    myState = States.HEALING;
                                 }
                             }
 
