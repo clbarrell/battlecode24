@@ -27,6 +27,7 @@ public class Navigation extends RobotPlayer {
     static boolean turnRight;
     static int symmetryGuess = -1; // 0 rotational, 1 x reflection, 2 y reflection
     static String[] symmetryGuessWords = { "rotational", "x reflection", "y reflection" };
+    static boolean iAmWaterBreaker = false;
 
     static MapLocation[] spawnLocs = rc.getAllySpawnLocations();
 
@@ -257,6 +258,7 @@ public class Navigation extends RobotPlayer {
         impassable = new boolean[directions.length];
         turnRight = rng.nextBoolean();
         myRandomDir = rng.nextInt(directions.length);
+        iAmWaterBreaker = rng.nextDouble() < 0.3;
     }
 
     static boolean strictlyCloser(MapLocation newLoc, MapLocation oldLoc, MapLocation target) {
@@ -357,7 +359,7 @@ public class Navigation extends RobotPlayer {
                         }
 
                         if (mi.isWater()) {
-                            if (mi.getCrumbs() > 0) {
+                            if (mi.getCrumbs() > 0 && rc.canFill(mi.getMapLocation())) {
                                 rc.fill(mi.getMapLocation());
                                 return true;
                             }
@@ -365,16 +367,35 @@ public class Navigation extends RobotPlayer {
                             // fill only if there are less than 5 water cells
                             int cellsWithWater = 1;
                             // already chcekd next
-                            int maxWaterCells = (int) Math.ceil(width * 0.18);
+                            int maxWaterCells = (int) Math.ceil(width * 0.21);
                             for (int i = 0; i < maxWaterCells; i++) {
                                 MapLocation nextLoc = newLoc.add(dir);
                                 if (rc.onTheMap(nextLoc) && rc.senseMapInfo(nextLoc).isWater())
                                     cellsWithWater++;
                             }
 
-                            if (rc.canFill(mi.getMapLocation()) && cellsWithWater < maxWaterCells) {
-                                rc.fill(mi.getMapLocation());
-                                return true;
+                            if (cellsWithWater < maxWaterCells || iAmWaterBreaker) {
+                                MapLocation mp = mi.getMapLocation();
+                                if (mp.x % 2 == mp.y % 2) {
+                                    // Try another cell to get the check pattern.
+                                    MapInfo mi2 = rc.senseMapInfo(myLocation.add(dir.rotateRight()));
+                                    if (mi2.isWater()) {
+                                        mp = mi2.getMapLocation();
+                                    } else {
+                                        mi2 = rc.senseMapInfo(myLocation.add(dir.rotateLeft()));
+                                        if (mi2.isWater()) {
+                                            mp = mi2.getMapLocation();
+                                        }
+                                    }
+                                }
+
+                                if (rc.canMove(myLocation.directionTo(mp))) {
+                                    rc.move(myLocation.directionTo(mp));
+                                    return true;
+                                } else if (rc.canFill(mp)) {
+                                    rc.fill(mp);
+                                    return true;
+                                }
                             }
                         }
                     }
@@ -783,8 +804,8 @@ public class Navigation extends RobotPlayer {
             move(nextLoc);
         }
 
-        if (roundNum % 15 == 0) {
-            myRandomDir += 4;
+        if (roundNum % 30 == 0) {
+            myRandomDir = rng.nextInt(directions.length);
         }
     }
 
