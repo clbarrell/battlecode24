@@ -75,7 +75,7 @@ public class Attack extends RobotPlayer {
     }
     Debug.log(s);
 
-    if (attackTarget == null && shouldIHealSomeone != null) {
+    if (attackTarget == null && shouldIHealSomeone != null && rc.canHeal(shouldIHealSomeone)) {
       bools[0] = true;
       myState = States.HEALING;
       rc.heal(shouldIHealSomeone);
