@@ -62,6 +62,7 @@ public strictfp class RobotPlayer {
     static int roundNum = 0;
     static int lowHealthRetreatNum = 310;
     static boolean isHealing = false;
+    static int resignWhen = 0;
 
     static enum States {
         STARTING,
@@ -78,7 +79,7 @@ public strictfp class RobotPlayer {
     static States myState = States.STARTING;
 
     // defending
-    static int DEFENDERS_PER_SPAWN = 3;
+    static int DEFENDERS_PER_SPAWN = 1;
     static boolean isDefender = false;
     static MapLocation defendLocation = null;
     static ArrayList<MapLocation> myTrapLocations = null;
@@ -357,13 +358,13 @@ public strictfp class RobotPlayer {
                                     myState = States.DEFENDER;
                                 } else if (isHealing) {
                                     myState = States.HEALING;
-                                    if (rc.getHealth() == GameConstants.DEFAULT_HEALTH) {
+                                    if (rc.getHealth() > 0.7 * GameConstants.DEFAULT_HEALTH) {
                                         Debug.log("All healed. Back to normal.");
                                         isHealing = false;
                                     } else {
-                                        // keep going back to base.
+                                        // keep going back to base or ally
                                         Debug.log("Still healing back to base.");
-                                        goToClosestAllySpawn();
+                                        goToClosestAllyOrSpawn();
                                         myState = States.HEALING;
                                     }
                                 } else {
@@ -429,8 +430,8 @@ public strictfp class RobotPlayer {
                     // }
 
                     if (roundNum == 750 || roundNum == 1500) {
-                        if (rc.canBuyGlobal(GlobalUpgrade.ACTION)) {
-                            rc.buyGlobal(GlobalUpgrade.ACTION);
+                        if (rc.canBuyGlobal(GlobalUpgrade.ATTACK)) {
+                            rc.buyGlobal(GlobalUpgrade.ATTACK);
                         }
                         if (rc.canBuyGlobal(GlobalUpgrade.HEALING)) {
                             rc.buyGlobal(GlobalUpgrade.HEALING);
@@ -488,6 +489,45 @@ public strictfp class RobotPlayer {
 
         // Your code should never reach here (unless it's intentional)! Self-destruction
         // imminent...
+    }
+
+    private static void goToClosestAllyOrSpawn() throws GameActionException {
+        // nearby allies to go to?
+        RobotInfo[] allies = rc.senseNearbyRobots(-1, rc.getTeam());
+        RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        RobotInfo goodAlly = null;
+        int goodAllyDist = 999999;
+        // find closest ally too
+        RobotInfo closestAlly = null;
+        int closestAllyDist = 999999;
+
+        for (RobotInfo ally : allies) {
+            int closestEnemy = 9999999;
+            for (RobotInfo enemy : enemies) {
+                int d = Util.distance(ally.getLocation(), enemy.getLocation());
+                if (d < closestEnemy) {
+                    closestEnemy = d;
+                }
+            }
+            if (closestEnemy < goodAllyDist) {
+                goodAllyDist = closestEnemy;
+                goodAlly = ally;
+            }
+
+            int d2 = Util.distance(ally.getLocation(), myLocation);
+            if (d2 < closestAllyDist) {
+                closestAllyDist = d2;
+                closestAlly = ally;
+            }
+        }
+
+        if (goodAlly != null) {
+            Navigation.move(goodAlly.getLocation());
+        } else if (closestAlly != null) {
+            Navigation.move(closestAlly.getLocation());
+        } else {
+            goToClosestAllySpawn();
+        }
     }
 
     private static void goToClosestAllySpawn() throws GameActionException {
@@ -576,16 +616,12 @@ public strictfp class RobotPlayer {
     private static void generateDefensiveTrapLocations() {
         boolean reverse = rng.nextBoolean();
         boolean alter = roundNum > 400;
-        myTrapLocations = new ArrayList<MapLocation>(Util.defendingTraps.length);
-        for (int i = 0; i < Util.defendingTraps.length; i++) {
-            int index = reverse ? Util.defendingTraps.length - i - 1 : i;
-            int[] trap = Util.defendingTraps[index];
+        myTrapLocations = new ArrayList<MapLocation>(Util.defendingTraps2.length);
+        for (int i = 0; i < Util.defendingTraps2.length; i++) {
+            int index = reverse ? Util.defendingTraps2.length - i - 1 : i;
+            int[] trap = Util.defendingTraps2[index];
             int x = defendLocation.x + trap[0];
             int y = defendLocation.y + trap[1];
-            if (alter) {
-                x = x + (rng.nextInt(5) - 2);
-                y = y + (rng.nextInt(5) - 2);
-            }
             if (x >= 0 && x < width && y >= 0 && y < height) {
                 myTrapLocations.add(new MapLocation(x, y));
             }

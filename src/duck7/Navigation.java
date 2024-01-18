@@ -359,8 +359,10 @@ public class Navigation extends RobotPlayer {
                         }
 
                         if (mi.isWater()) {
-                            if (mi.getCrumbs() > 0 && rc.canFill(mi.getMapLocation())) {
-                                rc.fill(mi.getMapLocation());
+                            if (mi.getCrumbs() > 0) {
+                                if (rc.canFill(mi.getMapLocation())) {
+                                    rc.fill(mi.getMapLocation());
+                                }
                                 return true;
                             }
 
@@ -378,15 +380,9 @@ public class Navigation extends RobotPlayer {
                                 MapLocation mp = mi.getMapLocation();
                                 if (mp.x % 2 == mp.y % 2) {
                                     // Try another cell to get the check pattern.
-                                    MapInfo mi2 = rc.senseMapInfo(myLocation.add(dir.rotateRight()));
-                                    if (mi2.isWater()) {
-                                        mp = mi2.getMapLocation();
-                                    } else {
-                                        mi2 = rc.senseMapInfo(myLocation.add(dir.rotateLeft()));
-                                        if (mi2.isWater()) {
-                                            mp = mi2.getMapLocation();
-                                        }
-                                    }
+                                    MapInfo mi2 = turnRight ? rc.senseMapInfo(myLocation.add(dir.rotateRight()))
+                                            : rc.senseMapInfo(myLocation.add(dir.rotateLeft()));
+                                    mp = mi2.getMapLocation();
                                 }
 
                                 if (rc.canMove(myLocation.directionTo(mp))) {
@@ -479,131 +475,134 @@ public class Navigation extends RobotPlayer {
                 if (canMove(dir))
                     rc.move(dir);
 
-            } catch (Exception e) {
+            }catch(
+
+        Exception e)
+        {
                 e.printStackTrace();
             }
-            // Debug.println("Last exit", id);
-            return true;
+        // Debug.println("Last exit", id);
+        return true;
+    }
+
+    private static Direction chooseBestDir() {
+        if (lPath.size() == 0 && rPath.size() == 0) {
+            Debug.log("WARNING!! No L/R paths found");
+            return null;
         }
 
-        private static Direction chooseBestDir() {
-            if (lPath.size() == 0 && rPath.size() == 0) {
-                Debug.log("WARNING!! No L/R paths found");
-                return null;
-            }
+        if (lPath.size() == 0) {
+            rotateRight = true;
+            return rPath.get(rPath.size() - 1).directionTo(target);
 
-            if (lPath.size() == 0) {
-                rotateRight = true;
-                return rPath.get(rPath.size() - 1).directionTo(target);
+        }
 
-            }
+        if (rPath.size() == 0) {
+            rotateRight = false;
+            return lPath.get(lPath.size() - 1).directionTo(target);
+        }
 
-            if (rPath.size() == 0) {
-                rotateRight = false;
-                return lPath.get(lPath.size() - 1).directionTo(target);
-            }
+        // Debug.log("Passed the checks for null paths");
 
-            // Debug.log("Passed the checks for null paths");
-
-            MapLocation lLast = lPath.get(lPath.size() - 1);
-            MapLocation rLast = rPath.get(rPath.size() - 1);
-            int lDist = Util.distance(lLast, target);
-            int rDist = Util.distance(rLast, target);
-            if (lDist < rDist) {
+        MapLocation lLast = lPath.get(lPath.size() - 1);
+        MapLocation rLast = rPath.get(rPath.size() - 1);
+        int lDist = Util.distance(lLast, target);
+        int rDist = Util.distance(rLast, target);
+        if (lDist < rDist) {
+            rotateRight = false;
+            lastObstacleFound = lastLObstacle;
+            // Debug.log("[L] Setting lastObsFound to " + lastObstacleFound);
+            return myLocation.directionTo(lPath.get(0));
+        } else if (rDist < lDist) {
+            rotateRight = true;
+            lastObstacleFound = lastRObstacle;
+            // Debug.log("[R] Setting lastObsFound to " + lastObstacleFound);
+            return myLocation.directionTo(rPath.get(0));
+        } else {
+            // same distance
+            if (lPath.size() < rPath.size()) {
                 rotateRight = false;
                 lastObstacleFound = lastLObstacle;
                 // Debug.log("[L] Setting lastObsFound to " + lastObstacleFound);
                 return myLocation.directionTo(lPath.get(0));
-            } else if (rDist < lDist) {
+            } else {
                 rotateRight = true;
                 lastObstacleFound = lastRObstacle;
                 // Debug.log("[R] Setting lastObsFound to " + lastObstacleFound);
                 return myLocation.directionTo(rPath.get(0));
+            }
+        }
+    }
+
+    // clear some of the previous data
+    static void resetPathfinding() {
+        // Debug.println("Resetting pathfinding", id);
+        lastObstacleFound = null;
+        minDistToEnemy = INF;
+        visited.clear();
+        shouldGuessRotation = true;
+        dirTryingToGo = null;
+        rotateRight = turnRight;
+    }
+
+    /**
+     * A loop I can recursively call with new turns/moves/
+     * 
+     * @param right
+     * @param dir
+     * @return
+     * @throws GameActionException
+     */
+    static MapLocation getNextPassableDirection(boolean right, Direction dir) throws GameActionException {
+        MapLocation obs = right ? lastRObstacle : lastLObstacle;
+        MapLocation start = rPath.size() == 0 ? myLocation
+                : right ? rPath.get(rPath.size() - 1)
+                        : lPath.get(lPath.size() - 1);
+        dir = dir == null ? start.directionTo(obs) : dir;
+        // Debug.log(
+        // "Checking " + (right ? "right" : "left") + " dir: " + dir.toString() + " from
+        // " + start.toString());
+        for (int j = 8; j-- > 0;) {
+            if (right) {
+                dir = dir.rotateRight();
             } else {
-                // same distance
-                if (lPath.size() < rPath.size()) {
-                    rotateRight = false;
-                    lastObstacleFound = lastLObstacle;
-                    // Debug.log("[L] Setting lastObsFound to " + lastObstacleFound);
-                    return myLocation.directionTo(lPath.get(0));
+                dir = dir.rotateLeft();
+            }
+
+            MapLocation newLoc = start.add(dir);
+            boolean canMove = false;
+            if (newLoc.equals(myLocation)) {
+                canMove = rc.canMove(dir);
+            } else {
+                canMove = rc.canSenseLocation(newLoc) && rc.onTheMap(newLoc)
+                        && !rc.senseMapInfo(newLoc).isWall() && !rc.senseMapInfo(newLoc).isWater(); // water?
+            }
+            if (canMove) {
+                // Debug.log(" Next dir for " + (right ? "right" : "left") + " is " + dir + " to
+                // " + newLoc);
+                return newLoc;
+            } else {
+                rc.setIndicatorDot(newLoc, 255, 180, 180);
+                if (rotateRight) {
+                    lastRObstacle = newLoc;
                 } else {
-                    rotateRight = true;
-                    lastObstacleFound = lastRObstacle;
-                    // Debug.log("[R] Setting lastObsFound to " + lastObstacleFound);
-                    return myLocation.directionTo(rPath.get(0));
+                    lastLObstacle = newLoc;
                 }
             }
         }
 
-        // clear some of the previous data
-        static void resetPathfinding() {
-            // Debug.println("Resetting pathfinding", id);
-            lastObstacleFound = null;
-            minDistToEnemy = INF;
-            visited.clear();
-            shouldGuessRotation = true;
-            dirTryingToGo = null;
-            rotateRight = turnRight;
-        }
+        return null;
+    }
 
-        /**
-         * A loop I can recursively call with new turns/moves/
-         * 
-         * @param right
-         * @param dir
-         * @return
-         * @throws GameActionException
-         */
-        static MapLocation getNextPassableDirection(boolean right, Direction dir) throws GameActionException {
-            MapLocation obs = right ? lastRObstacle : lastLObstacle;
-            MapLocation start = rPath.size() == 0 ? myLocation
-                    : right ? rPath.get(rPath.size() - 1)
-                            : lPath.get(lPath.size() - 1);
-            dir = dir == null ? start.directionTo(obs) : dir;
-            // Debug.log(
-            // "Checking " + (right ? "right" : "left") + " dir: " + dir.toString() + " from
-            // " + start.toString());
-            for (int j = 8; j-- > 0;) {
-                if (right) {
-                    dir = dir.rotateRight();
-                } else {
-                    dir = dir.rotateLeft();
-                }
-
-                MapLocation newLoc = start.add(dir);
-                boolean canMove = false;
-                if (newLoc.equals(myLocation)) {
-                    canMove = rc.canMove(dir);
-                } else {
-                    canMove = rc.canSenseLocation(newLoc) && rc.onTheMap(newLoc)
-                            && !rc.senseMapInfo(newLoc).isWall() && !rc.senseMapInfo(newLoc).isWater(); // water?
-                }
-                if (canMove) {
-                    // Debug.log(" Next dir for " + (right ? "right" : "left") + " is " + dir + " to
-                    // " + newLoc);
-                    return newLoc;
-                } else {
-                    rc.setIndicatorDot(newLoc, 255, 180, 180);
-                    if (rotateRight) {
-                        lastRObstacle = newLoc;
-                    } else {
-                        lastLObstacle = newLoc;
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        // static int getCode() {
-        // int x = rc.getLocation().x;
-        // int y = rc.getLocation().y;
-        // Direction obstacleDir = rc.getLocation().directionTo(target);
-        // if (lastObstacleFound != null)
-        // obstacleDir = rc.getLocation().directionTo(lastObstacleFound);
-        // int bit = rotateRight ? 1 : 0;
-        // return (((((x << 6) | y) << 4) | obstacleDir.ordinal()) << 1) | bit;
-        // }
+    // static int getCode() {
+    // int x = rc.getLocation().x;
+    // int y = rc.getLocation().y;
+    // Direction obstacleDir = rc.getLocation().directionTo(target);
+    // if (lastObstacleFound != null)
+    // obstacleDir = rc.getLocation().directionTo(lastObstacleFound);
+    // int bit = rotateRight ? 1 : 0;
+    // return (((((x << 6) | y) << 4) | obstacleDir.ordinal()) << 1) | bit;
+    // }
     }
 
     public static MapLocation bestEnemyLocationGuess() throws GameActionException {
