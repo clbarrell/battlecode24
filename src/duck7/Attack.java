@@ -36,8 +36,7 @@ public class Attack extends RobotPlayer {
    */
   static public void attack() throws GameActionException {
     // make decisions about what I should do, when I have sensed enemies.
-    s = "ACD " + rc.getActionCooldownTurns() + ", MCD " + rc.getMovementCooldownTurns() + ", A-RDY? "
-        + rc.isActionReady() + ", MRDY? " + rc.isMovementReady() + ", ";
+    s = "A-RDY? " + rc.isActionReady() + ", MRDY? " + rc.isMovementReady() + ", ";
     // Sense nearby enemies
     sense();
 
@@ -114,7 +113,7 @@ public class Attack extends RobotPlayer {
         s += "Too many enemies to wait for next attack. ";
         setState(States.RETREATING);
         moveToAllies();
-      } else {
+      } else if (allEnemies.length > 0) {
         // it's a good idea to move closer to attack
         // find a position that complements my allies
         RobotInfo[] alliesAttacking = rc.senseNearbyRobots(allEnemies[0].getLocation(),
@@ -152,16 +151,15 @@ public class Attack extends RobotPlayer {
     }
   }
 
+  /** For robots who need to find reinforcement */
   private static void moveToAllies() throws GameActionException {
     MapLocation move = lookForMove(MoveTypes.TO_ALLIES);
     if (move != null) {
       Navigation.move(move);
       s += "moving to allies " + pl(move) + ", ";
     } else {
-      targetEnemyLocation = Navigation.bestEnemyLocationGuess();
-      Navigation.move(targetEnemyLocation);
-      myState = States.MOVING_TO_ENEMY_SPAWN;
-      s += "moving to enemySpawn " + pl(move) + ", ";
+      // can't move to allies
+      goToClosestAllySpawn();
     }
   }
 
@@ -209,13 +207,16 @@ public class Attack extends RobotPlayer {
     MapLocation stepBack = lookForMove(MoveTypes.OUT_OF_RANGE);
     if (stepBack != null) {
       Navigation.move(stepBack);
+      s += "Stepping back " + pl(stepBack);
+    } else {
+      s += "moving to closest spawn. ";
+      goToClosestAllySpawn();
     }
-    s += "Stepping back " + pl(stepBack);
   }
 
   /** Prioritises allies away from enemies for low health bots */
   private static void moveToAlliesOrSpawn() throws GameActionException {
-    if (closeEnemies.length > 0) {
+    if (enemiesForNextAttack.length > 0) {
       MapLocation move = lookForMove(MoveTypes.FURTHEST_FROM_ENEMIES);
       if (move != null) {
         Navigation.move(move);
@@ -290,7 +291,7 @@ public class Attack extends RobotPlayer {
               distToEnemies = dist;
               moveOption = loc;
             }
-            s += "loc: " + pl(loc) + " dist: " + dist + ", ";
+            // s += "loc: " + pl(loc) + " dist: " + dist + ", ";
             break;
         }
       }
