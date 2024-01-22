@@ -358,7 +358,9 @@ public class Navigation extends RobotPlayer {
 
                         if (mi.isWater()) {
                             if (mi.getCrumbs() > 0) {
-                                rc.fill(mi.getMapLocation());
+                                if (rc.canFill(mi.getMapLocation())) {
+                                    rc.fill(mi.getMapLocation());
+                                }
                                 return true;
                             }
 
