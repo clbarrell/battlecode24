@@ -135,6 +135,13 @@ public class Util {
             { -4, -4 }, { 0, -4 }, { 4, -4 }
     };
 
+    static int[][] defendingTraps2 = new int[][] {
+            { -2, 1 }, { -1, 2 },
+            { -2, -2 }, { -1, -1 }, { 0, 0 }, { 1, 1 }, { 2, 2 },
+            { 1, -2 }, { 2, -1 },
+
+    };
+
     /**
      * REMEMBER EACH SHOCK TRAP triggers on 1 either side.
      * T - - - T - - - T
