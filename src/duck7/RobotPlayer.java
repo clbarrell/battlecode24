@@ -93,6 +93,7 @@ public strictfp class RobotPlayer {
     // broadcasted flags
     static ArrayList<MapLocation> enemyFlagBroadcasts = new ArrayList<MapLocation>();
     static HashMap<Integer, MapLocation> stepsToFlag = new HashMap<Integer, MapLocation>();
+    static boolean isFlagCarrier = false;
 
     /**
      * run() is the method that is called when a robot is instantiated in the
@@ -142,6 +143,9 @@ public strictfp class RobotPlayer {
                 // Limit the number of robots we spawn
                 if (!rc.isSpawned()) {
                     spawnMe();
+                    if (isFlagCarrier) {
+                        isFlagCarrier = false;
+                    }
                 } else {
                     // ***** Start turn things *****
                     myLocation = rc.getLocation();
@@ -288,12 +292,15 @@ public strictfp class RobotPlayer {
                         // an ally spawn zone to capture it! We use the check roundNum >= SETUP_ROUNDS
                         // to make sure setup phase has ended.
                         if (rc.hasFlag()) {
+                            botLog += "I have a flag. ";
                             captureFlag();
+                            doINeedSupport();
                             myState = States.STEALING_FLAG;
                         } else {
                             // Get some data
                             RobotInfo[] enemyRobots = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
                             MapLocation priorityFlag = Comm.getEnemyPriorityFlag();
+                            MapLocation supportFlagCarrier = Comm.flagCaptureSupportNeeded();
                             RobotInfo weakestAlly = weakestAlly();
                             FlagInfo[] flagInfos = rc.senseNearbyFlags(-1, rc.getTeam().opponent());
                             boolean someoneToHeal = (rc.getHealth() < 500 || (weakestAlly != null
@@ -319,10 +326,13 @@ public strictfp class RobotPlayer {
                                 // move to flag
                                 if (rc.canPickupFlag(flagInfos[0].getLocation())) {
                                     botLog += "Picked up flag. ";
+                                    isFlagCarrier = true;
                                     rc.pickupFlag(flagInfos[0].getLocation());
                                     myState = States.STEALING_FLAG;
                                     takenAction = true;
                                     Comm.clearEnemyFlagLocation(flagInfos[0].getLocation());
+                                    // check and ask for help
+                                    doINeedSupport();
                                 } else {
                                     Comm.reportEnemyFlagLocation(flagInfos[0].getLocation());
                                     myState = States.CHASING_FLAG;
@@ -354,7 +364,7 @@ public strictfp class RobotPlayer {
                             }
 
                             // heal my mates first?
-                            if (enemyRobots.length == 0 && someoneToHeal) {
+                            if (enemyRobots.length == 0 && someoneToHeal && weakestAlly != null) {
                                 // if I can heal, heal. Otherwise move closer
                                 myState = States.HEALING;
                                 if (rc.canHeal(weakestAlly.getLocation())) {
@@ -370,20 +380,35 @@ public strictfp class RobotPlayer {
                                 // otherwise just wait.
                             }
 
-                            // Priority flag - GO GET IT
-                            if (priorityFlag != null && !isDefender && !isHealing
+                            // Priority flag // support flag carrier - GO GET IT
+                            if ((priorityFlag != null || supportFlagCarrier != null) && !isDefender && !isHealing
                                     && (enemyRobots.length <= 1 || flagFinder)
                                     && !someoneToHeal) {
                                 // if I can sense it and it doesn't exist, remove it
-                                if (rc.canSenseLocation(priorityFlag) && flagInfos.length == 0) {
-                                    botLog += "Removing priority flag (not there), ";
-                                    Comm.clearEnemyFlagLocation(priorityFlag);
-                                } else if (!haveMoved) {
-                                    botLog += "Moving to priority flag, ";
-                                    Navigation.move(priorityFlag);
-                                    myState = States.CHASING_FLAG;
-                                    haveMoved = true;
+                                if (supportFlagCarrier != null) {
+                                    if (rc.canSenseLocation(supportFlagCarrier) && flagInfos.length == 0) {
+                                        botLog += "Removing supportFlagCarrier (not there) " + pl(supportFlagCarrier)
+                                                + ". ";
+                                        Comm.haveEnoughSupport(supportFlagCarrier);
+                                    } else if (!haveMoved) {
+                                        botLog += "Moving to supportFlagCarrier, ";
+                                        Navigation.move(supportFlagCarrier);
+                                        myState = States.SUPPORTING_FLAG_CARRIER;
+                                        haveMoved = true;
+                                    }
+                                } else if (priorityFlag != null) {
+                                    if (rc.canSenseLocation(priorityFlag) && flagInfos.length == 0) {
+                                        botLog += "Removing priority flag (not there), ";
+                                        Comm.clearEnemyFlagLocation(priorityFlag);
+                                    } else if (!haveMoved) {
+                                        botLog += "Moving to priority flag, ";
+                                        Navigation.move(priorityFlag);
+                                        myState = States.CHASING_FLAG;
+                                        haveMoved = true;
+                                    }
+
                                 }
+
                             }
 
                             // LOOK FOR ENEMY
@@ -493,6 +518,15 @@ public strictfp class RobotPlayer {
                             }
                         }
                     }
+                    // cleaning stuff up stuff
+                    if (isFlagCarrier && !rc.hasFlag()) {
+                        isFlagCarrier = false;
+                        if (rc.getHealth() > 0) {
+                            botLog += "Captured flag. Don't need support anymore";
+                            Comm.haveEnoughSupport(myLocation);
+                        }
+                    }
+
                     if (botLog != "" && Debug.showLogs) {
                         Debug.log(botLog);
                     }
@@ -527,6 +561,19 @@ public strictfp class RobotPlayer {
 
         // Your code should never reach here (unless it's intentional)! Self-destruction
         // imminent...
+    }
+
+    private static void doINeedSupport() throws GameActionException {
+        // allies nearby
+        RobotInfo[] allies = rc.senseNearbyRobots(-1, rc.getTeam());
+        if (allies.length < 16) {
+            // ask for help
+            botLog += "Asking for help. ";
+            Comm.askForHelp(myLocation);
+        } else {
+            botLog += "Have enough support. ";
+            Comm.haveEnoughSupport(myLocation);
+        }
     }
 
     public static void healMyMate() throws GameActionException {
@@ -595,7 +642,7 @@ public strictfp class RobotPlayer {
             botLog += "Following my prev move " + pl(nextStoredLocation) + ", ";
             Navigation.move(nextStoredLocation);
         } else {
-            botLog += "Going to closest spawn";
+            botLog += "Going to closest spawn. ";
             goToClosestAllySpawn();
         }
     }
@@ -661,6 +708,9 @@ public strictfp class RobotPlayer {
     static RobotInfo weakestAlly() throws GameActionException {
         RobotInfo[] allies = rc.senseNearbyRobots(11, rc.getTeam());
         RobotInfo weakestAlly = getLowHealthRI(allies);
+        if (weakestAlly != null && weakestAlly.getHealth() == GameConstants.DEFAULT_HEALTH) {
+            return null;
+        }
         return weakestAlly;
     }
 
@@ -783,6 +833,9 @@ public strictfp class RobotPlayer {
     }
 
     public static String pl(MapLocation loc) {
+        if (loc == null) {
+            return "[null]";
+        }
         return "[" + loc.x + "/" + loc.y + "]";
     }
 

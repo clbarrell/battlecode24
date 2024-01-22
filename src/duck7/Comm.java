@@ -59,6 +59,10 @@ public class Comm extends RobotPlayer {
   private static int FLAG_1_PRESENT_INDEX = 17;
   private static int FLAG_2_PRESENT_INDEX = 18;
   private static int FLAG_3_PRESENT_INDEX = 19;
+  // 20-22 next flag supporting position
+  private static int NEXT_FLAG_SUPPORTING_DXDY_POSITION_INDEX = 20;
+  private static int FLAG_CARRIER_TO_SUPPORT_INDEX_1 = 21;
+  private static int FLAG_CARRIER_TO_SUPPORT_INDEX_2 = 22;
 
   public static int anySymmetryConfirmed() throws GameActionException {
     int rotational = rc.readSharedArray(0);
@@ -361,14 +365,18 @@ public class Comm extends RobotPlayer {
     }
   }
 
-  public static int[] getBestSupportingPosition(MapLocation target) throws GameActionException {
+  public static int[] getBestSupportingPosition(MapLocation flag) throws GameActionException {
     //
-    int i = rng.nextInt(Util.supportingPositionDxDy.length);
-    int[] dx_dy = Util.supportingPositionDxDy[i];
-    // MapLocation closestBase = getClosestML(getFlagLocations());
-    // int[] boost = { 0, 0 };
-    // if
-    return dx_dy;
+    // int i = rng.nextInt(Util.supportingPositionDxDy.length);
+    // int[] dx_dy = Util.supportingPositionDxDy[i];
+    MapLocation[] flagLocs = Comm.getFlagLocations();
+    MapLocation closestSpawn = getClosestML(flagLocs);
+    // trying new supporting positions
+    int[][] pos = Util.generateSupportCoords(closestSpawn, flag);
+    int i = rc.readSharedArray(NEXT_FLAG_SUPPORTING_DXDY_POSITION_INDEX);
+    // update next
+    rc.writeSharedArray(NEXT_FLAG_SUPPORTING_DXDY_POSITION_INDEX, i + 1);
+    return pos[i % pos.length];
   }
 
   // only called when they're not null
@@ -426,6 +434,50 @@ public class Comm extends RobotPlayer {
     }
 
     return null;
+  }
+
+  public static void askForHelp(MapLocation myLocation) throws GameActionException {
+    MapLocation f1 = readMapLocationFromIndex(FLAG_CARRIER_TO_SUPPORT_INDEX_1);
+    MapLocation f2 = readMapLocationFromIndex(FLAG_CARRIER_TO_SUPPORT_INDEX_2);
+
+    botLog += "Trying to store " + pl(myLocation) + ". ";
+
+    if (f1 == null || (f1 != null && f1.distanceSquaredTo(myLocation) <= 5)) {
+      botLog += "storing f1. ";
+      writeMapLocationToIndex(myLocation, FLAG_CARRIER_TO_SUPPORT_INDEX_1);
+    } else if (f2 == null || (f2 != null && f2.distanceSquaredTo(myLocation) <= 5)) {
+      botLog += "storing f2. ";
+      writeMapLocationToIndex(myLocation, FLAG_CARRIER_TO_SUPPORT_INDEX_1);
+    } else {
+      botLog += "can't ask for support as 2 flag positions already taken. f1 " + pl(f1) + ", f2 " + pl(f2) + ". ";
+    }
+
+  }
+
+  public static void haveEnoughSupport(MapLocation myLocation) throws GameActionException {
+    MapLocation f1 = readMapLocationFromIndex(FLAG_CARRIER_TO_SUPPORT_INDEX_1);
+    MapLocation f2 = readMapLocationFromIndex(FLAG_CARRIER_TO_SUPPORT_INDEX_2);
+
+    if (f1 != null && f1.distanceSquaredTo(myLocation) <= 5) {
+      writeMapLocationToIndex(null, FLAG_CARRIER_TO_SUPPORT_INDEX_1);
+    } else if (f2 != null && f2.distanceSquaredTo(myLocation) <= 5) {
+      writeMapLocationToIndex(null, FLAG_CARRIER_TO_SUPPORT_INDEX_1);
+    }
+  }
+
+  public static MapLocation flagCaptureSupportNeeded() throws GameActionException {
+    MapLocation f1 = readMapLocationFromIndex(FLAG_CARRIER_TO_SUPPORT_INDEX_1);
+    MapLocation f2 = readMapLocationFromIndex(FLAG_CARRIER_TO_SUPPORT_INDEX_2);
+    MapLocation res = null;
+
+    if (f1 != null) {
+      res = readMapLocationFromIndex(FLAG_CARRIER_TO_SUPPORT_INDEX_1);
+      botLog += "flagcaptureSupports f1 " + pl(f1) + ", ";
+    } else if (f2 != null) {
+      res = readMapLocationFromIndex(FLAG_CARRIER_TO_SUPPORT_INDEX_2);
+      botLog += "flagcaptureSupports f2 " + pl(f2) + ". ";
+    }
+    return res;
   }
 
 }
