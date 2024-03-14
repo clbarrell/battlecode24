@@ -1,3 +1,4 @@
+// FOR SUPPORTING POSITIONS
 // generate the map coords to paste into the java util file
 
 let coords = [];
@@ -13,12 +14,94 @@ for (let x = -3; x < 4; x++) {
 coords.sort(() => Math.random() - 0.5);
 
 console.log(coords.map((c) => `{${c[0]}, ${c[1]}}`).join(", "));
+
+// SUPPORTING POSITIONS 2
+let supportCoords = {
+  left: [],
+  right: [],
+  top: [],
+  bottom: [],
+  br: [],
+  bl: [],
+  tl: [],
+  tr: [],
+};
+
+[2, 3].forEach((x) => {
+  [1, 0, -1].forEach((y) => {
+    supportCoords.right.push([x, y]);
+  });
+
+  [-2, -3].forEach((y) => {
+    supportCoords.br.push([x, y]);
+  });
+
+  [2, 3].forEach((y) => {
+    supportCoords.tr.push([x, y]);
+  });
+});
+
+[-2, -3].forEach((x) => {
+  [1, 0, -1].forEach((y) => {
+    supportCoords.left.push([x, y]);
+  });
+
+  [-2, -3].forEach((y) => {
+    supportCoords.bl.push([x, y]);
+  });
+
+  [2, 3].forEach((y) => {
+    supportCoords.tl.push([x, y]);
+  });
+});
+
+[1, 0, -1].forEach((x) => {
+  [2, 3].forEach((y) => {
+    supportCoords.top.push([x, y]);
+  });
+
+  [-2, -3].forEach((y) => {
+    supportCoords.bottom.push([x, y]);
+  });
+});
+
+const bl = [
+  ...supportCoords.bl,
+  ...supportCoords.bottom,
+  ...supportCoords.left,
+];
+const br = [
+  ...supportCoords.br,
+  ...supportCoords.bottom,
+  ...supportCoords.right,
+];
+const tl = [...supportCoords.tl, ...supportCoords.top, ...supportCoords.left];
+const tr = [...supportCoords.tr, ...supportCoords.top, ...supportCoords.right];
+
+const finalCoords = {
+  br: br,
+  bl: bl,
+  tl: tl,
+  tr: tr,
+};
+
+console.log("\nSUPPORT COORDS\n\n");
+Object.entries(finalCoords).forEach(([k, v]) => {
+  console.log(
+    `private static final int[][] supportCoords${k.replace(
+      k[0],
+      k[0].toUpperCase()
+    )} = {${v.map((c) => `{${c[0]}, ${c[1]}}`).join(", ")}};`
+  );
+});
+
 /*
   - - - - - - - -  
-  - - - - - - - -
-  - - - X - - - -
-  - - - - - - - -
-  - - - - - - - -
+  - - - - - R R -
+  - - - X - R R -
+  - - - - - R R -
+  - - B B B * * -
+  - - B B B * * -
 */
 
 // directions

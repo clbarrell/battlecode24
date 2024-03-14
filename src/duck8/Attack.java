@@ -1,6 +1,4 @@
-package duck7;
-
-import static duck7.RobotPlayer.getLowHealthRI;
+package duck8;
 
 import java.util.ArrayList;
 import java.util.Arrays;

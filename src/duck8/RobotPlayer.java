@@ -1,4 +1,4 @@
-package duck7;
+package duck8;
 
 import battlecode.common.*;
 
@@ -439,7 +439,7 @@ public strictfp class RobotPlayer {
                                     haveMoved = true;
                                 }
                             }
-
+                            myLocation = rc.getLocation();
                             // Heal
                             // Maybe only heal here if I there's no enemies in view
                             if (rc.getActionCooldownTurns() <= GameConstants.COOLDOWN_LIMIT
@@ -452,8 +452,16 @@ public strictfp class RobotPlayer {
                             if (rc.getActionCooldownTurns() <= GameConstants.COOLDOWN_LIMIT
                                     && !isDefender && roundNum >= GameConstants.SETUP_ROUNDS) {
                                 boolean buildTrap = rng.nextDouble() > 0.6;
+                                MapInfo[] mapInfosClose = rc.senseNearbyMapInfos(2);
+                                // filter for traps
+                                for (MapInfo info : mapInfosClose) {
+                                    if (info.getTrapType() != TrapType.NONE) {
+                                        buildTrap = false;
+                                    }
+                                }
+
                                 if (rc.senseNearbyRobots(-1, rc.getTeam()).length > 2 && buildTrap) {
-                                    if (rc.canBuild(TrapType.STUN, myLocation)) {
+                                    if (rc.canBuild(TrapType.STUN, myLocation) && rc.senseMapInfo(myLocation).getTrapType() == TrapType.NONE) {
                                         rc.build(TrapType.STUN, myLocation);
                                     } else if (rc.canBuild(TrapType.STUN, myLocation.add(Direction.NORTH))) {
                                         rc.build(TrapType.STUN, myLocation.add(Direction.NORTH));

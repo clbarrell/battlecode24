@@ -1,4 +1,4 @@
-package duck7;
+package duck8;
 
 import battlecode.common.Direction;
 import battlecode.common.MapLocation;
